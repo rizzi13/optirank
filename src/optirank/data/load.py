@@ -108,3 +108,12 @@ def make_synthetic_avazu_df(n_rows: int = 200, seed: int = SEED) -> pd.DataFrame
         "C21": np.full(len(hours), 79, dtype="int16"),
     })
     return df.astype(get_avazu_dtypes())
+if __name__ == "__main__":
+    print("=" * 60)
+    print("Converting data/raw/train.gz into daily Parquet partitions...")
+    print("=" * 60)
+    counts = convert_to_daily_parquet()
+    print("\nProcessing complete! Daily record breakdown:")
+    for day, count in sorted(counts.items()):
+        print(f"  Day {day}: {count} rows")
+    print(f"\nTotal rows converted: {sum(counts.values())}")
