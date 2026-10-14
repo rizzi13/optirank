@@ -347,3 +347,94 @@ Imagine you are placing physical billboard ads around a city:
 
 > **Q2: "In real-time ad serving with a 30 ms SLA, how do you decide whether a feature should be precomputed offline vs computed on-the-fly online?"**  
 > **A:** *"We classify features into two operational tiers: Stateless context features (like cyclical time encodings, banner aspect ratio, and composite user proxy resolution) are computed on-the-fly at runtime because they require zero network I/O and execute in sub-millisecond CPU cycles. Stateful historical features (like 7-day user CTR or campaign impression counts) cannot be computed on the fly across 40M rows; they are precomputed in an offline batch pipeline and stored in a low-latency key-value cache (like Redis) for sub-millisecond point lookups."*
+
+
+---
+
+## 10. Production ML Testing: Smoke, Invariant, and Data Integrity Tests
+
+### 💡 Intuitive Analogy: The Airplane Pre-Flight Checklist
+Before a commercial jet takes off with 300 passengers, the pilots don't just "hope" the engines work. They go through a strict 3-tier checklist:
+1. **The Smoke Test (Does it Turn On?):** Turn the key, check if the battery lights turn on, and make sure the cockpit instruments boot up without an explosion.
+2. **The Invariant Test (The Laws of Physics):** Check the fuel gauge: can the fuel level ever be negative? No. Can the airspeed indicator show -50 mph? No. If an instrument reads an impossible number, the plane is grounded immediately.
+3. **The Edge-Case Stress Test (Turbulence & Ice):** What happens if outside air drops to -40°C? Does the de-icer prevent the wings from freezing?
+
+In machine learning, **80% of production outages are NOT bad AI algorithms—they are data pipeline crashes**:
+- A feature column was missing.
+- A division by zero produced Infinity.
+- An unscaled feature produced NaN weights.
+- Future data leaked into past training sets.
+**Automated Pytest suites are the pre-flight checklist that prevents your model from crashing in production.**
+
+### 🔬 Deep Technical Mechanics & Mathematics
+In standard software engineering, unit tests check deterministic logic (e.g. `add(2, 2) == 4`).  
+In Machine Learning engineering, tests must validate **probabilistic bounds, mathematical invariants, and schema contracts**:
+
+1. **Schema & Contract Invariant Tests:**
+   - Verifies that feature engineering output strictly adheres to downstream model input contracts:
+     $$\text{Cols}_{\text{expected}} \subseteq \text{Cols}_{\text{actual}}$$
+   - Prevents `KeyError` during real-time inference when the ranker expects `hour_sin` but received nothing.
+2. **Mathematical Invariant & Bound Tests:**
+   - Features bounded by analytical definitions must strictly satisfy their mathematical codomain:
+     $$\forall x \in \text{hour\_sin}, \quad -1.0 \le x \le 1.0$$
+     $$\forall x \in \text{hour\_cos}, \quad -1.0 \le x \le 1.0$$
+   - A single value exceeding $1.0$ proves trigonometric floating-point corruption or unnormalized input angles.
+3. **Numerical Safety & Edge-Case Guard Tests:**
+   - In production ad streams, dirty or corrupted records inevitably arrive (e.g. tracking pixels with `height = 0`).
+   - Tests verify that mathematical operations never emit non-finite IEEE 754 floating-point values:
+     $$\text{feature} \notin \{\text{NaN}, +\infty, -\infty\}$$
+4. **Leakage & Temporal Disjointness Tests:**
+   - Mathematical proof of zero data leakage across split partitions:
+     $$\text{Train}_{\text{days}} \cap \text{Val}_{\text{days}} = \emptyset, \quad \text{Train}_{\text{days}} \cap \text{Test}_{\text{days}} = \emptyset$$
+   - Verifies that temporal order is strictly monotonic ($t_{\text{train}} < t_{\text{val}} < t_{\text{test}}$).
+
+### 💻 Line-by-Line Code Breakdown (`tests/test_features.py`)
+```python
+# 1. Schema Contract Test: Verifies all required features are present
+def test_build_context_features_schema():
+    df = make_synthetic_avazu_df(n_rows=100)
+    enriched = build_context_features(df)
+    expected_cols = [
+        "hour_sin", "hour_cos", "user_proxy", "is_mobile_web",
+        "banner_area", "banner_aspect_ratio", "ad_app_key"
+    ]
+    for col in expected_cols:
+        assert col in enriched.columns  # Fails fast if a column is missing
+
+# 2. Mathematical Invariant Test: Verifies trigonometric values stay on the unit circle
+def test_cyclical_time_bounds():
+    df = make_synthetic_avazu_df(n_rows=50)
+    enriched = build_context_features(df)
+    assert enriched["hour_sin"].between(-1.0, 1.0).all()
+    assert enriched["hour_cos"].between(-1.0, 1.0).all()
+    assert enriched["hour_sin"].dtype == np.float32
+
+# 3. Entity Resolution Logic Test: Validates IF-ELSE branching
+def test_composite_user_proxy_resolution():
+    df = pd.DataFrame({
+        "device_id": [DEFAULT_DEVICE_ID, "real_device_123"],
+        "device_ip": ["192.168.1.1", "10.0.0.1"],
+        "device_model": ["iPhone14", "Pixel7"],
+    })
+    enriched = build_context_features(df)
+    assert enriched.loc[0, "user_proxy"] == "192.168.1.1_iPhone14"
+    assert enriched.loc[1, "user_proxy"] == "real_device_123"
+
+# 4. Numerical Safety Test: Proves division-by-zero is safely handled
+def test_zero_height_guard():
+    df = pd.DataFrame({"C15": [320], "C16": [0]})  # Zero height
+    enriched = build_context_features(df)
+    assert not np.isinf(enriched.loc[0, "banner_aspect_ratio"])
+    assert not np.isnan(enriched.loc[0, "banner_aspect_ratio"])
+```
+
+### 🎯 The Production Problem It Solves
+- **Preventing Silent Model Failures:** Unlike regular software that crashes with red error logs, ML models often **fail silently**. If an engineered feature accidentally turns into `NaN` or all zeros, the model doesn't crash; it simply outputs garbage click predictions (`0.50` for every ad). The company bleeds revenue for weeks before anyone notices. Unit testing catches this immediately in CI/CD.
+- **CI/CD Build Automation (GitHub Actions):** Running `pytest` automatically on every `git push` ensures that no developer or pull request can merge breaking changes into the `main` branch.
+
+### 🎤 Senior/Staff ML Interview Questions & Model Answers:
+> **Q1: "How do unit tests for Machine Learning pipelines differ from traditional software unit tests?"**  
+> **A:** *"Traditional software unit tests assert deterministic inputs and outputs (`f(2) == 4`). ML unit tests, by contrast, focus on three distinct dimensions: **Data contract and schema tests** (ensuring required feature columns and exact memory dtypes like `int8` or `float32` match model signatures), **Mathematical invariant tests** (asserting that probabilities stay within $[0, 1]$ or trigonometric encodings stay within $[-1, 1]$), and **Numerical safety tests** (verifying that edge cases like zero divisors or missing categories never emit `NaN` or `Infinity` that would destabilize downstream neural network gradients)."*
+
+> **Q2: "What is a 'silent failure' in ML production systems, and how do you protect against it?"**  
+> **A:** *"A silent failure occurs when a bug in feature transformation does not raise an exception, but corrupts model inputs—for example, an entity resolution key failing and grouping all users into one ID, or uncalibrated probabilities causing bid distortion. We protect against silent failures with two lines of defense: First, offline invariant tests in our CI pipeline validating distribution bounds and non-overlapping time splits. Second, online drift monitors (like Population Stability Index and Kolmogorov-Smirnov tests) that trigger real-time alerts if live feature distributions deviate from training baselines."*
