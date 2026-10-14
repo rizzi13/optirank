@@ -351,6 +351,8 @@ Imagine you are placing physical billboard ads around a city:
 
 ---
 
+---
+
 ## 10. Production ML Testing: Smoke, Invariant, and Data Integrity Tests
 
 ### 💡 Intuitive Analogy: The Airplane Pre-Flight Checklist
@@ -388,42 +390,85 @@ In Machine Learning engineering, tests must validate **probabilistic bounds, mat
      $$\text{Train}_{\text{days}} \cap \text{Val}_{\text{days}} = \emptyset, \quad \text{Train}_{\text{days}} \cap \text{Test}_{\text{days}} = \emptyset$$
    - Verifies that temporal order is strictly monotonic ($t_{\text{train}} < t_{\text{val}} < t_{\text{test}}$).
 
-### 💻 Line-by-Line Code Breakdown (`tests/test_features.py`)
-```python
-# 1. Schema Contract Test: Verifies all required features are present
-def test_build_context_features_schema():
-    df = make_synthetic_avazu_df(n_rows=100)
-    enriched = build_context_features(df)
-    expected_cols = [
-        "hour_sin", "hour_cos", "user_proxy", "is_mobile_web",
-        "banner_area", "banner_aspect_ratio", "ad_app_key"
-    ]
-    for col in expected_cols:
-        assert col in enriched.columns  # Fails fast if a column is missing
+### 💻 Comprehensive Line-by-Line Breakdown of the Complete Test Suite
 
-# 2. Mathematical Invariant Test: Verifies trigonometric values stay on the unit circle
-def test_cyclical_time_bounds():
-    df = make_synthetic_avazu_df(n_rows=50)
+#### 1. Configuration Smoke Test (`tests/test_smoke.py`)
+```python
+def test_config_split_order():
+    # Asserts training end day is strictly before validation day (no time inversion)
+    assert CFG.train_end_day < CFG.val_end_day
+    # Asserts downsampling rate is mathematically valid: 0.0 < w <= 1.0
+    assert 0.0 < CFG.neg_downsample_rate <= 1.0
+    # Verifies global privacy sentinel device ID matches Avazu specification
+    assert DEFAULT_DEVICE_ID == "a99f214a"
+```
+
+#### 2. Streaming Parquet & Memory Savings Test (`tests/test_load.py`)
+```python
+def test_chunked_parquet_loader_and_memory_savings(tmp_path):
+    df_synth = make_synthetic_avazu_df(n_rows=200)
+    # 1. Compare in-memory byte footprints
+    df_default = pd.read_csv(csv_path)  # Default int64
+    default_bytes = df_default.memory_usage(deep=True).sum()
+    compact_bytes = df_synth.memory_usage(deep=True).sum()
+    # Mathematically proves our compact schema cuts RAM
+    assert compact_bytes < default_bytes
+
+    # 2. Test chunked conversion execution (chunksize=50 forces 4 chunks)
+    counts = convert_to_daily_parquet(csv_path=csv_path, out_dir=out_dir, chunksize=50)
+    assert counts == {141021: 100, 141022: 100}
+    # Verifies native int8 dtype is preserved upon reload from disk
+    df_loaded = pd.read_parquet(out_dir / "day_141021.parquet")
+    assert str(df_loaded["click"].dtype) == "int8"
+```
+
+#### 3. Temporal Partitioning & Prior Correction Test (`tests/test_split.py`)
+```python
+def test_split_days_strictly_chronological():
+    splits = get_split_days()
+    # Verifies strict non-overlapping mathematical set disjointness
+    assert set(splits["train"]).isdisjoint(set(splits["val"]))
+    assert set(splits["train"]).isdisjoint(set(splits["test"]))
+    assert set(splits["val"]).isdisjoint(set(splits["test"]))
+
+def test_downsample_negatives_preserves_clicks():
+    # 20 clicks and 80 non-clicks
+    downsampled = downsample_negatives(df, negative_rate=0.25, random_state=42)
+    # Asserts 100% of clicks are preserved (20 clicks retained)
+    assert (downsampled["click"] == 1).sum() == 20
+    # Asserts exactly 25% of non-clicks retained (80 * 0.25 = 20)
+    assert (downsampled["click"] == 0).sum() == 20
+
+def test_correct_prior_recovers_true_probability():
+    true_p = 0.1742
+    w = 0.25
+    shifted_p = true_p / (true_p + w * (1.0 - true_p))
+    # Proves Bayes' formula inverts shifted probability back to true prior within 1e-6
+    recovered = correct_prior(shifted_p, negative_rate=w)
+    assert np.isclose(recovered, true_p, atol=1e-6)
+```
+
+#### 4. Feature Geometry & Numerical Safety Test (`tests/test_features.py`)
+```python
+def test_build_context_features_schema():
+    # Verifies all 7 engineered features are generated
     enriched = build_context_features(df)
+    for col in ["hour_sin", "hour_cos", "user_proxy", "is_mobile_web", "banner_area", "banner_aspect_ratio", "ad_app_key"]:
+        assert col in enriched.columns
+
+def test_cyclical_time_bounds():
+    # Verifies trigonometric bounds on unit circle [-1.0, 1.0] and float32 precision
     assert enriched["hour_sin"].between(-1.0, 1.0).all()
-    assert enriched["hour_cos"].between(-1.0, 1.0).all()
     assert enriched["hour_sin"].dtype == np.float32
 
-# 3. Entity Resolution Logic Test: Validates IF-ELSE branching
 def test_composite_user_proxy_resolution():
-    df = pd.DataFrame({
-        "device_id": [DEFAULT_DEVICE_ID, "real_device_123"],
-        "device_ip": ["192.168.1.1", "10.0.0.1"],
-        "device_model": ["iPhone14", "Pixel7"],
-    })
-    enriched = build_context_features(df)
+    # Verifies masked device_id maps to IP_Model, while real device_id is preserved
     assert enriched.loc[0, "user_proxy"] == "192.168.1.1_iPhone14"
     assert enriched.loc[1, "user_proxy"] == "real_device_123"
 
-# 4. Numerical Safety Test: Proves division-by-zero is safely handled
 def test_zero_height_guard():
-    df = pd.DataFrame({"C15": [320], "C16": [0]})  # Zero height
-    enriched = build_context_features(df)
+    # Zero height edge case: asserts division-by-zero produces neither NaN nor Infinity
+    enriched = build_context_features(df_zero_height)
     assert not np.isinf(enriched.loc[0, "banner_aspect_ratio"])
     assert not np.isnan(enriched.loc[0, "banner_aspect_ratio"])
 ```
