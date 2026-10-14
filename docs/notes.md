@@ -54,6 +54,25 @@ Instead, data is split **strictly chronologically**:
 - **Validation Split:** October 29 (day 9, used for tuning hyperparameters, calibration, and cascade thresholds)
 - **Test Split:** October 30 (day 10, strictly held out to simulate "tomorrow's live incoming traffic")
 
+### 💻 Line-by-Line Code Breakdown (`src/optirank/features/split.py`)
+```python
+def get_split_days(config: SplitConfig | None = None) -> dict[str, list[int]]:
+    # Read timestamp cutoff boundaries from central config
+    cfg = config or SplitConfig()
+    train_end = cfg.train_end_day // 100  # 14102823 // 100 = 141028 (Days 1 to 8)
+    val_end = cfg.val_end_day // 100      # 14102923 // 100 = 141029 (Day 9)
+
+    # All 10 available dataset days chronologically
+    all_days = [141021, 141022, 141023, 141024, 141025, 141026, 141027, 141028, 141029, 141030]
+
+    # Non-overlapping partitions: Train <= Day 8, Val == Day 9, Test == Day 10
+    return {
+        "train": [d for d in all_days if d <= train_end],
+        "val": [d for d in all_days if train_end < d <= val_end],
+        "test": [d for d in all_days if d > val_end],
+    }
+```
+
 ### 🎯 The Production Problem It Solves
 - **Temporal Data Leakage:** In online advertising, user engagement, click trends, and advertiser budgets change continuously across hours and days. If you randomly shuffle, an impression from Oct 28 at 2:05 PM is in the training set while an impression from Oct 28 at 2:00 PM for the exact same user/ad is in the test set. The model simply memorizes that day's active campaign performance, leading to artificially inflated offline test metrics that fail completely when deployed to production.
 
@@ -86,6 +105,30 @@ To train models quickly within a 16 GB RAM budget, we perform **Negative Downsam
 
 **The Mathematical Fix:** Before using $\hat{p}$ in an auction, we apply Bayes' analytical prior correction formula to recover the true probability $\hat{q}$:
 $$\hat{q} = \frac{\hat{p}}{\hat{p} + \frac{1 - \hat{p}}{w}}$$
+
+### 💻 Line-by-Line Code Breakdown (`src/optirank/features/split.py`)
+```python
+def downsample_negatives(df: pd.DataFrame, negative_rate: float = 0.25, random_state: int = 42) -> pd.DataFrame:
+    if negative_rate >= 1.0:
+        return df
+
+    # Separate clicks vs non-clicks
+    positives = df[df["click"] == 1]
+    negatives = df[df["click"] == 0]
+
+    # Sample exactly w% (25%) of non-clicks with reproducible seed
+    sampled_negatives = negatives.sample(frac=negative_rate, random_state=random_state)
+
+    # Recombine and shuffle rows within the day
+    combined = pd.concat([positives, sampled_negatives], ignore_index=True)
+    return combined.sample(frac=1.0, random_state=random_state).reset_index(drop=True)
+
+
+def correct_prior(raw_p: float | np.ndarray, negative_rate: float = 0.25) -> float | np.ndarray:
+    # Analytical odds correction: p / (p + (1 - p) / w)
+    odds = (1.0 - raw_p) / negative_rate
+    return raw_p / (raw_p + odds)
+```
 
 ### 🎯 The Production Problem It Solves
 - **Memory & Training Speed:** Discarding redundant non-clicks reduces training volume by over 60%, allowing 8 days of data to fit smoothly in RAM and train in minutes rather than hours.
@@ -129,6 +172,23 @@ Instead of loading the full file in one call, our data pipeline uses three techn
    - `hour`, `C14` $\rightarrow$ `int32` (4 bytes, up to $+2$ billion)
 2. **Chunked Streaming (`chunksize=1_000_000`):** Reads only 1 million rows into RAM at a time as a Python iterator.
 3. **Daily Partitioned Parquet:** Slices rows by day (`hour // 100`) and flushes completed days to disk as compressed `.parquet` files (`day_141021.parquet` .. `day_141030.parquet`).
+
+### 💻 Line-by-Line Code Breakdown (`src/optirank/data/load.py`)
+```python
+def get_avazu_dtypes() -> dict[str, str]:
+    # Assign minimum bit-width according to column dynamic ranges
+    return {
+        "click": "int8",        # Target (0/1) -> 1 byte (-128..127)
+        "banner_pos": "int8",   # Position (0..7) -> 1 byte
+        "hour": "int32",        # Timestamp (14102100) -> 4 bytes
+        "C15": "int16",         # Width (320) -> 2 bytes (-32k..+32k)
+        "C16": "int16",         # Height (50) -> 2 bytes
+    }
+
+# Stream 40M rows in 500,000-row chunks using iterator
+for chunk in pd.read_csv(raw_csv_path, chunksize=500_000, dtype=get_avazu_dtypes()):
+    save_daily_partition(chunk)
+```
 
 ### 🎯 The Production Problem It Solves
 - **Preventing OOM (Out-of-Memory) Crashes:** Loading a 6 GB CSV with default 64-bit types consumes >14 GB of RAM, freezing standard laptops. Compact types cut memory by **~65%**, and chunked streaming caps peak RAM at **under 1.5 GB**.
@@ -189,6 +249,20 @@ def my_reusable_function():
 if __name__ == "__main__":
     # This code executes ONLY when run directly from the terminal
     print("Running script directly!")
+```
+
+### 💻 Line-by-Line Code Breakdown
+```python
+# Function definitions sitting at the top of file
+def convert_to_daily_parquet():
+    ...
+
+# Guard clause checking the interpreter invocation scope
+if __name__ == "__main__":
+    # Executes ONLY when launched directly from terminal: python myfile.py
+    # Skipped when imported by tests or other modules
+    print("Converting data...")
+    convert_to_daily_parquet()
 ```
 
 ### 🎯 The Production Problem It Solves
