@@ -235,3 +235,41 @@ In large-scale ad systems, EDA is designed to uncover **structural realities of 
 
 > **Q2: "How do you handle position bias in ad ranking models?"**  
 > **A:** *"Position bias means users click top positions simply because of screen placement, not ad relevance. During offline training, `banner_pos` is provided as an input feature so the model attributes the position effect to that feature rather than attributing it to the ad itself. During online inference at rank time, if position is not yet known before the auction, we evaluate candidates with a default position or marginalize over possible slots."*
+
+
+---
+
+## 9. Feature Engineering in Ad-Tech: Cyclical Time, Placement Geometry & Cross Synergy
+
+### 💡 Intuitive Analogy: The Clock, The Billboard, and The Running Shoes
+Imagine you are placing physical billboard ads around a city:
+1. **The Clock (Cyclical Time):** If you tell someone to meet you at 11:00 PM and another person at 12:00 Midnight, they know those times are right next to each other (1 hour apart). But to a dumb computer reading numbers 0 to 23, 23 and 0 look as far apart as possible! By wrapping the hours around a round clock face (using sine and cosine), midnight sits right next to 11 PM.
+2. **The Billboard (Visual Saliency):** A giant Times Square billboard (Area: 100,000 sq ft) catches way more eyes than a flyer taped to a lamp post (Area: 1 sq ft), regardless of what is printed on it. Calculating `banner_area = width * height` tells the model how big the ad is. Calculating `aspect_ratio = width / height` tells the model if it is a wide horizontal header or a tall vertical story.
+3. **The Running Shoes (Cross Synergy):** An ad for Nike running shoes gets ignored in an automotive repair app, but gets clicked like crazy inside Spotify or Strava while people are running. Combining `ad_id + "_" + app_id` captures this specific pair chemistry.
+
+### 🔬 Deep Technical Mechanics & Mathematics
+
+1. **Trigonometric Cyclical Encodings (Circadian Periodicity):**
+   - Given hour $h \in \{0, 1, \dots, 23\}$, map onto the 2D Cartesian unit circle:
+     $$\theta = \frac{2\pi \cdot h}{24}$$
+     $$\text{hour\_sin} = \sin(\theta), \quad \text{hour\_cos} = \cos(\theta)$$
+   - Both coordinates are mandatory: using $\sin$ alone creates symmetry ambiguity ($\sin(2\text{ AM}) = \sin(10\text{ AM}) = 0.5$). The pair $(\cos\theta, \sin\theta)$ forms a continuous, invertible embedding where Euclidean distance accurately reflects temporal proximity:
+     $$\text{dist}(23:00, 00:00) = \sqrt{(\cos\theta_{23} - \cos\theta_0)^2 + (\sin\theta_{23} - \sin\theta_0)^2} \approx 0.26$$
+
+2. **Visual Salience Geometry:**
+   - **Area ($A$):** $A = C15 \times C16$ (width $\times$ height). Stored as `int32` to prevent 16-bit integer overflow when area $> 32,767$.
+   - **Aspect Ratio ($R$):** $R = \frac{C15}{\max(C16, 1.0)}$. Clamped with $\max(C16, 1.0)$ to prevent division-by-zero crashes on corrupt logs.
+
+3. **Memory Optimization:**
+   - Float features are cast to `float32` (4 bytes) instead of Python's default `float64` (8 bytes), cutting feature memory footprint by 50% and matching native GPU tensor layouts.
+
+### 🎯 Production Engineering Realities
+- **Stateless Inference (< 0.05 ms):** Trigonometric functions ($\sin, \cos$) and multiplications execute directly in CPU registers without network round-trips or database lookups, fitting well inside our 30 ms SLA.
+- **Cold-Start Fallback:** When a brand-new advertiser launches an unseen creative ID ($C14$), the model can still generate an accurate baseline prediction based on `banner_area` and `banner_aspect_ratio`.
+
+### 🎤 Senior/Staff ML Interview Questions & Model Answers:
+> **Q1: "Why do you encode hour of day using trigonometric sine and cosine instead of leaving it as an integer from 0 to 23 or one-hot encoding it?"**  
+> **A:** *"Leaving hour as an integer imposes an artificial ordinal discontinuity: the model perceives 23:00 and 00:00 as 23 units apart rather than 1 hour apart. One-hot encoding creates 24 sparse binary dimensions that destroy ordinal proximity—23:00 becomes equally orthogonal to 22:00 and 12:00. Trigonometric sine and cosine encoding maps time onto a 2D continuous unit circle, preserving cyclical periodicity while using only 2 dense features."*
+
+> **Q2: "In real-time ad serving with a 30 ms SLA, how do you decide whether a feature should be precomputed offline vs computed on-the-fly online?"**  
+> **A:** *"We classify features into two operational tiers: Stateless context features (like cyclical time encodings, banner aspect ratio, and composite user proxy resolution) are computed on-the-fly at runtime because they require zero network I/O and execute in sub-millisecond CPU cycles. Stateful historical features (like 7-day user CTR or campaign impression counts) cannot be computed on the fly across 40M rows; they are precomputed in an offline batch pipeline and stored in a low-latency key-value cache (like Redis) for sub-millisecond point lookups."*
