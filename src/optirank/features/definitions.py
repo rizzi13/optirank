@@ -11,28 +11,23 @@ def build_context_features(df: pd.DataFrame) -> pd.DataFrame:
     """Extract cyclical temporal, device, and geometry features from raw columns."""
     df = df.copy()
 
-    # 1. Diurnal Cyclical Time Encodings
     hour_of_day = df["hour"] % 100
     theta = 2.0 * np.pi * hour_of_day / 24.0
     df["hour_sin"] = np.sin(theta).astype(np.float32)
     df["hour_cos"] = np.cos(theta).astype(np.float32)
 
-    # 2. Entity Resolution via Composite User Proxy
     df["user_proxy"] = np.where(
         df["device_id"] != DEFAULT_DEVICE_ID,
         df["device_id"],
         df["device_ip"].astype(str) + "_" + df["device_model"].astype(str),
     )
 
-    # 3. Traffic Segmentation (Mobile Web vs In-App)
     df["is_mobile_web"] = (df["app_id"] == "ecad2386").astype(np.int8)
 
-    # 4. Physical Ad Placement Geometry
     df["banner_area"] = (df["C15"].astype(np.int32) * df["C16"].astype(np.int32)).astype(np.int32)
     safe_height = np.maximum(df["C16"].astype(np.float32), 1.0)
     df["banner_aspect_ratio"] = (df["C15"].astype(np.float32) / safe_height).astype(np.float32)
 
-    # 5. Context Cross Interaction
     df["ad_app_key"] = df["C14"].astype(str) + "_" + df["app_id"].astype(str)
 
     return df

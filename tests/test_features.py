@@ -8,8 +8,7 @@ from optirank.data.load import make_synthetic_avazu_df
 from optirank.features.definitions import build_context_features
 
 
-# Test 1: Check that all 7 new columns exist after feature engineering
-def test_build_context_features_adds_expected_columns():
+def test_build_context_features_schema():
     df = make_synthetic_avazu_df(n_rows=100)
     enriched = build_context_features(df)
 
@@ -26,7 +25,6 @@ def test_build_context_features_adds_expected_columns():
         assert col in enriched.columns
 
 
-# Test 2: Check that sine and cosine stay strictly between -1.0 and +1.0
 def test_cyclical_time_bounds():
     df = make_synthetic_avazu_df(n_rows=50)
     enriched = build_context_features(df)
@@ -37,8 +35,7 @@ def test_cyclical_time_bounds():
     assert enriched["hour_cos"].dtype == np.float32
 
 
-# Test 3: Check that masked "a99f214a" IDs get unmasked into IP_Model
-def test_composite_user_proxy_unmasking():
+def test_composite_user_proxy_resolution():
     df = pd.DataFrame({
         "hour": [14102100, 14102100],
         "device_id": [DEFAULT_DEVICE_ID, "real_device_123"],
@@ -52,21 +49,18 @@ def test_composite_user_proxy_unmasking():
 
     enriched = build_context_features(df)
 
-    # Row 0: masked device_id -> should become IP_Model
     assert enriched.loc[0, "user_proxy"] == "192.168.1.1_iPhone14"
     assert enriched.loc[0, "is_mobile_web"] == 1
     assert enriched.loc[0, "banner_area"] == 16000
     assert np.isclose(enriched.loc[0, "banner_aspect_ratio"], 6.4)
 
-    # Row 1: real device_id -> should keep original device_id
     assert enriched.loc[1, "user_proxy"] == "real_device_123"
     assert enriched.loc[1, "is_mobile_web"] == 0
     assert enriched.loc[1, "banner_area"] == 75000
     assert np.isclose(enriched.loc[1, "banner_aspect_ratio"], 1.2)
 
 
-# Test 4: Check that height = 0 does NOT crash with ZeroDivisionError
-def test_zero_height_safety():
+def test_zero_height_guard():
     df = pd.DataFrame({
         "hour": [14102100],
         "device_id": ["dev_1"],
@@ -75,7 +69,7 @@ def test_zero_height_safety():
         "app_id": ["app_1"],
         "C14": [100],
         "C15": [320],
-        "C16": [0],  # Edge case: zero height!
+        "C16": [0],
     })
 
     enriched = build_context_features(df)
