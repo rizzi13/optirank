@@ -1,3 +1,280 @@
+# 🏛️ OptiRank — Staff-Level Engineering & Machine Learning Encyclopedia
+> **Single Source of Truth Career Reference:** Distributed Systems, High-Throughput ML Pipelines, Sequential Decision Theory, and Production Ad-Tech Engineering.
+
+---
+
+## 📑 Master Index & Career Navigation Guide
+
+### 📚 PART I: HOLISTIC COMPUTER SCIENCE & ML DOMAINS (360° Mastery)
+- [🏛️ Domain Module 1: The Multi-Stage Ranking & Recommendation Cascade Spectrum](#-domain-module-1-the-multi-stage-ranking--recommendation-cascade-spectrum)
+  - [1.1 The Full Industry Landscape & Architectural Spectrum](#11-the-full-industry-landscape--architectural-spectrum)
+  - [1.2 Theoretical Foundations, Algorithmic Limits & Mathematical Cascades](#12-theoretical-foundations-algorithmic-limits--mathematical-cascades)
+  - [1.3 Low-Level System Mechanics & Memory Footprints](#13-low-level-system-mechanics--memory-footprints)
+  - [1.4 Production Failure Modes & Attack Vectors](#14-production-failure-modes--attack-vectors)
+  - [1.5 Big Tech Architectural Trade-Offs (YouTube vs Meta Ads)](#15-big-tech-architectural-trade-offs)
+- [🏛️ Domain Module 2: Temporal Validation, Covariate Shift & Concept Drift](#-domain-module-2-temporal-validation-covariate-shift--concept-drift)
+  - [2.1 The Full Industry Landscape](#21-the-full-industry-landscape)
+  - [2.2 Theoretical Foundations & Mathematics (I.I.D. Fallacy & Population Stability Index)](#22-theoretical-foundations--mathematics)
+  - [2.3 Production Failure Modes](#23-production-failure-modes)
+- [🏛️ Domain Module 3: Extreme Class Imbalance & Prior Calibration Theory](#-domain-module-3-extreme-class-imbalance--prior-calibration-theory)
+  - [3.1 The Full Industry Landscape](#31-the-full-industry-landscape)
+  - [3.2 Mathematical Foundations: The Proof of Bayes Odds Correction](#32-mathematical-foundations-the-proof-of-bayes-odds-correction)
+  - [3.3 Economic & Revenue Impact in Real-Time Auctions (eCPM)](#33-economic--revenue-impact-in-real-time-auctions-ecpm)
+- [🏛️ Domain Module 4: High-Throughput Streaming I/O, Columnar Storage & Memory Layouts](#-domain-module-4-high-throughput-streaming-io-columnar-storage--memory-layouts)
+  - [4.1 Row-Oriented vs. Columnar-Oriented Storage Mechanics](#41-row-oriented-vs-columnar-oriented-storage-mechanics)
+  - [4.2 Low-Level Hardware Optimization (Cache Lines, Dictionary, Snappy/ZSTD)](#42-low-level-hardware-optimization)
+- [🏛️ Domain Module 5: Sequential Decision Theory & Contextual Multi-Armed Bandits](#-domain-module-5-sequential-decision-theory--contextual-multi-armed-bandits)
+  - [5.1 The Fundamental Explore-Exploit Trade-Off](#51-the-fundamental-explore-exploit-trade-off)
+  - [5.2 Algorithmic Spectrum & Regret Bounds](#52-algorithmic-spectrum--regret-bounds)
+  - [5.3 Mathematical Mechanics of LinUCB (Disjoint Ridge & Confidence Ellipsoids)](#53-mathematical-mechanics-of-linucb-disjoint-model)
+  - [5.4 Production Low-Latency Matrix Updates (Sherman-Morrison Formula)](#54-production-low-latency-matrix-updates-sherman-morrison-formula)
+- [🏛️ Domain Module 6: Entity Resolution, Identity Resolution & Composite Keys](#-domain-module-6-entity-resolution-identity-resolution--composite-keys)
+  - [6.1 The Full Industry Landscape](#61-the-full-industry-landscape)
+  - [6.2 Mathematical Foundations: Entropy & Probabilistic Record Linkage](#62-mathematical-foundations-entropy--probabilistic-record-linkage)
+- [🏛️ Domain Module 7: Representation Learning & Categorical Regularization](#-domain-module-7-representation-learning--categorical-regularization)
+  - [7.1 The Mathematical Mechanics of Out-of-Fold Target Encoding](#71-the-mathematical-mechanics-of-out-of-fold-target-encoding)
+
+---
+
+### 🛠️ PART II: OPTIRANK ARCHITECTURE & DAY-BY-DAY MASTERCLASSES
+- [🏗️ The OptiRank Two-Stage Cascade Architecture](#-the-optirank-two-stage-cascade-architecture)
+- [📅 Day 1 Masterclass: Streaming Ingestion, Schema Typing & Dynamic Configuration](#-day-1-masterclass-streaming-ingestion-schema-typing--dynamic-configuration)
+  - [Component 1: Dynamic Configuration (`src/optirank/config.py`)](#component-1-dynamic-configuration-srcoptirankconfigpy)
+  - [Component 2: Chunked Streaming & Parquet Partitioning (`src/optirank/data/load.py`)](#component-2-high-performance-chunked-streaming--parquet-partitioning-srcoptirankdataloadpy)
+- [📅 Day 2 Masterclass: Exploratory Data Analysis & Production Verification](#-day-2-masterclass-exploratory-data-analysis--production-verification)
+  - [Component: Production EDA Engine (`src/optirank/data/eda.py`)](#component-production-eda-engine-srcoptirankdataedapy)
+- [📅 Day 3 Masterclass: Chronological Splitting, Negative Downsampling & Feature Engineering](#-day-3-masterclass-chronological-splitting-negative-downsampling--feature-engineering)
+  - [Component 1: Temporal Splitting & Prior Correction (`src/optirank/features/split.py`)](#component-1-temporal-splitting--prior-correction-srcoptirankfeaturessplitpy)
+  - [Component 2: Spatial-Temporal & Context Features (`src/optirank/features/definitions.py`)](#component-2-spatial-temporal--context-feature-engineering-srcoptirankfeaturesdefinitionspy)
+- [📅 Day 4 Masterclass: Historical Feature Stores & Out-of-Fold Target Encoding](#-day-4-masterclass-historical-feature-stores--out-of-fold-target-encoding)
+  - [Component 1: Point-in-Time Historical Feature Engine (`src/optirank/features/history.py`)](#component-1-point-in-time-historical-feature-engine-srcoptirankfeatureshistorypy)
+  - [Component 2: Out-of-Fold Target Encoder with Empirical Bayes (`src/optirank/features/target_encoder.py`)](#component-2-out-of-fold-target-encoder-with-empirical-bayes-srcoptirankfeaturestarget_encoderpy)
+- [🧪 Comprehensive Production ML Test Suite Breakdown](#-comprehensive-production-ml-test-suite-breakdown)
+  - [1. Configuration Smoke Test (`tests/test_smoke.py`)](#1-teststest_smokepy-configuration--environment-integrity)
+  - [2. Streaming Parquet & Memory Savings Test (`tests/test_load.py`)](#2-teststest_loadpy-streaming-parquet--memory-ingestion)
+  - [3. Temporal Invariance & Bayesian Prior Inversion Test (`tests/test_split.py`)](#3-teststest_splitpy-temporal-invariance--bayesian-prior-inversion)
+  - [4. Feature Geometry & Numerical Safety Test (`tests/test_features.py`)](#4-teststest_featurespy-feature-geometry--numerical-safety)
+
+---
+
+# 📚 PART I: HOLISTIC COMPUTER SCIENCE & ML DOMAINS (360° Mastery)
+
+---
+
+## 🏛️ Domain Module 1: The Multi-Stage Ranking & Recommendation Cascade Spectrum
+
+### 1.1 The Full Industry Landscape & Architectural Spectrum
+In modern web-scale systems (Google Search, YouTube, Spotify, Amazon, Meta Ads, TikTok), candidate inventories range from $10^7$ to $10^9$ items. Generating real-time personalized rankings within strict sub-50 ms P99 latency budgets is the central challenge of Information Retrieval (IR) and Recommendation Systems.
+
+| Paradigm | Complexity per Request | Latency SLA | Model Capacity | Industry Use-Case |
+| :--- | :--- | :--- | :--- | :--- |
+| **Heuristic / Inverted Index** | $O(\log N)$ or $O(1)$ | $1 - 3 \text{ ms}$ | Zero parameters (BM25, Boolean filters) | Lucene, Elasticsearch, Keyword Ad Triggers |
+| **Vector Search (ANN / Two-Tower)** | $O(M \cdot D)$ with HNSW/IVF | $5 - 15 \text{ ms}$ | Low (Separated Dot-Product Embeddings) | YouTube candidate retrieval, Spotify playlist seeds |
+| **Rough Ranker (Lightweight GBDT)** | $O(K_1 \cdot T \cdot D_{tree})$ | $5 - 10 \text{ ms}$ | Medium (LightGBM, Distilled Student Nets) | Pinterest candidate filtering, Meta Ads Stage-1 |
+| **Heavy Precision Ranker (DLRM / Transformers)** | $O(K_2 \cdot L \cdot D_{model}^2)$ | $20 - 40 \text{ ms}$ | Massive (Cross networks, attention heads, dense features) | Google Ads CTR prediction, TikTok feed ranker |
+| **Re-Ranking & Contextual Bandits** | $O(K_3 \cdot D_{context})$ | $2 - 5 \text{ ms}$ | Dynamic stateful policy (LinUCB, Thompson Sampling) | Netflix artwork bandit, Ad auction bid pacing |
+
+### 1.2 Theoretical Foundations, Algorithmic Limits & Mathematical Cascades
+- **The Physical Impossibility of Single-Stage Ranking:**
+  Evaluating 10,000,000 candidate ads with a 50-layer Deep & Cross Network (DCN-v2) requiring 500,000 FLOPs per inference would demand:
+  $$10^7 \times 5 \times 10^5 = 5 \times 10^{12} \text{ FLOPs} = 5 \text{ TeraFLOPs per request}$$
+  At 100,000 Queries Per Second (QPS), this would require $500,000 \text{ PetaFLOPs}$—exceeding the compute capacity of entire global cloud data centers.
+- **The Cascade Optimization Problem:**
+  A ranking cascade minimizes total serving cost while bounding recall loss:
+  $$\max_{\{K_1, K_2, \dots, K_M\}} \text{Recall@K}(K_M) \quad \text{subject to} \quad \sum_{m=1}^M T_m(K_{m-1}) \le T_{\text{budget}}$$
+  where $K_0 = N$ (total corpus), $K_m$ is the output candidate count of stage $m$, and $T_m$ is the stage execution latency.
+- **Cascade Error Propagation:**
+  If stage $m$ has recall $R_m = P(\text{relevant} \in \text{Output}_m \mid \text{relevant} \in \text{Input}_m)$, the end-to-end recall is multiplicative:
+  $$R_{\text{cascade}} = \prod_{m=1}^M R_m$$
+  A drop from 95% to 90% in Stage 1 retrieval irreversibly caps the entire system's maximum potential revenue at 90%, regardless of how perfect the downstream heavy ranker is.
+
+### 1.3 Low-Level System Mechanics & Memory Footprints
+- **CPU Cache Locality & SIMD:** First-stage rankers (e.g., FastTree, TreeLite) compile decision trees into C arrays, maximizing CPU L1/L2 instruction cache hits and using AVX-512 SIMD vectorization to evaluate 16 feature thresholds per clock cycle.
+- **GPU Kernel Concurrency:** Deep rankers batch candidates into dense tensor matrices evaluated concurrently via NVIDIA TensorRT or Triton Inference Server with FP16/INT8 quantization.
+
+### 1.4 Production Failure Modes & Attack Vectors
+- **Survival Bias (Cascade Selection Bias):** Downstream heavy rankers only observe training samples that successfully bypassed stages 1 and 2. The training distribution is heavily conditioned on $P(Y \mid \text{Pass}_1=1, \text{Pass}_2=1)$, causing the model to miscalibrate on cold-start items.
+- **Feedback Loops & Filter Bubbles:** Exploitative models repeatedly surface the same high-CTR items, starving new inventory of impressions.
+
+### 1.5 Big Tech Architectural Trade-Offs
+- **YouTube (Google):** Employs a Two-Stage Deep Cascade (Candidate Generation via Deep Collaborative Filtering $\to$ Heavy Ranking via Deep Neural Network with Hundreds of Features).
+- **Meta Ads:** Uses a 4-stage cascade: Retrieval $\to$ Early Stage Ranker (Lightweight GBDT) $\to$ Late Stage Ranker (Heavy DLRM) $\to$ Auction & Bid Optimization Engine.
+
+---
+
+## 🏛️ Domain Module 2: Temporal Validation, Covariate Shift & Concept Drift
+
+### 2.1 The Full Industry Landscape
+In non-stationary dynamic environments (Quantitative Trading, High-Frequency Ad Auctions, Cybersecurity Intrusion, E-Commerce Demand), data arrives sequentially over time.
+
+| Validation Strategy | Leakage Risk | Use-Case Suitability | Industry Standard In |
+| :--- | :--- | :--- | :--- |
+| **K-Fold Random CV** | 🚨 **Severe (100% Lookahead Leakage)** | Static computer vision, tabular biology | Academic Kaggle benchmarks ONLY |
+| **Chronological Cutoff (Train/Val/Test)** | Zero (Strict historical ordering) | Standard production time-series | Ad-Tech (Avazu, Criteo), Retail Forecasting |
+| **Rolling-Window (Walk-Forward)** | Zero (Sliding time window) | Short-memory environments | Intraday Crypto/FX trading |
+| **Purged & Embargoed Group CV** | Zero (Eliminates autocorrelation overlap)| Overlapping serial correlation | Quantitative Hedge Funds (Marcos López de Prado) |
+
+### 2.2 Theoretical Foundations & Mathematics
+- **The I.I.D. Fallacy:** Machine learning theory classically assumes samples $(x_i, y_i) \stackrel{\text{i.i.d.}}{\sim} \mathcal{P}(X, Y)$. In real-world systems, distributions drift continuously over time $t$:
+  $$\mathcal{P}_t(X, Y) \neq \mathcal{P}_{t + \Delta t}(X, Y)$$
+- **Covariate Shift vs. Concept Drift:**
+  - **Covariate Shift:** The input feature distribution shifts while conditional probabilities remain fixed:
+    $$P_t(X) \neq P_{t+\Delta t}(X) \quad \text{and} \quad P(Y \mid X) = \text{constant}$$
+    *(e.g., A surge in iOS 14.5 traffic changes device features, but click likelihood given a specific context stays identical).*
+  - **Concept Drift:** The fundamental relationship between features and the target changes:
+    $$P_t(Y \mid X) \neq P_{t+\Delta t}(Y \mid X)$$
+    *(e.g., Black Friday: an ad for consumer electronics that usually has a 2% CTR suddenly surges to 12% CTR for identical feature inputs).*
+- **Quantifying Drift (Population Stability Index - PSI):**
+  $$\text{PSI} = \sum_{b=1}^B \left( P_b - Q_b \right) \times \ln\left( \frac{P_b}{Q_b} \right)$$
+  - $\text{PSI} < 0.1$: No significant distribution shift.
+  - $0.1 \le \text{PSI} \le 0.25$: Moderate drift; trigger model retraining.
+  - $\text{PSI} > 0.25$: Severe drift; model predictions untrustworthy; fall back to conservative baseline.
+
+### 2.3 Production Failure Modes
+- **Lookahead Bias in Backtesting:** A model trained with future knowledge achieves a fictitious 0.95 ROC-AUC offline, but collapses to 0.52 when deployed to live traffic.
+
+---
+
+## 🏛️ Domain Module 3: Extreme Class Imbalance & Prior Calibration Theory
+
+### 3.1 The Full Industry Landscape
+Positive events are extremely rare in high-concurrency event-driven systems:
+- **Online Display Advertising:** $0.1\% - 2.0\%$ Click-Through Rate (CTR).
+- **Credit Card Fraud Detection:** $0.01\% - 0.05\%$ Fraudulent Transactions.
+- **Rare Disease Medical Diagnosis:** $0.001\%$ Pathological Biopsies.
+
+### 3.2 Mathematical Foundations: The Proof of Bayes Odds Correction
+When training on 40,000,000 ad events, 82.6% are negative (non-clicks). Training on all raw negatives wastes compute and causes uninformative gradients. 
+
+**Negative Downsampling Protocol:**
+- Retain $100\%$ of positive examples ($y=1$).
+- Keep a random fraction $w \in (0, 1]$ of negative examples ($y=0$) (e.g., $w = 0.25$).
+
+**The Formal Proof of Prior Shift:**
+Let $y \in \{0, 1\}$ be the true label, and $s \in \{0, 1\}$ be the sampling selection indicator:
+$$P(s=1 \mid y=1) = 1, \quad P(s=1 \mid y=0) = w$$
+
+By Bayes' Rule, the sampled conditional posterior is:
+$$P(y=1 \mid x, s=1) = \frac{P(s=1 \mid y=1, x) P(y=1 \mid x)}{P(s=1 \mid x)}$$
+
+Expressing this in **odds ratio form**:
+$$\text{Odds}(y=1 \mid x, s=1) = \frac{P(y=1 \mid x, s=1)}{P(y=0 \mid x, s=1)}$$
+Substituting the sampling probabilities:
+$$\text{Odds}(y=1 \mid x, s=1) = \frac{1 \cdot P(y=1 \mid x)}{w \cdot P(y=0 \mid x)} = \frac{1}{w} \text{Odds}(y=1 \mid x)$$
+
+Taking the natural logarithm yields the **Logit Shift Formula**:
+$$\text{logit}(p_{\text{sampled}}) = \text{logit}(p_{\text{true}}) - \ln(w)$$
+
+Inverting this formula yields the exact, mathematically unbiased **True Probability Reconstruction**:
+$$p_{\text{true}} = \frac{p_{\text{sampled}}}{p_{\text{sampled}} + \frac{1 - p_{\text{sampled}}}{w}}$$
+
+### 3.3 Economic & Revenue Impact in Real-Time Auctions (eCPM)
+In programmatic ad exchanges (Google AdX, Magnite, PubMatic), ad ranking is determined by **Expected Cost Per Mille (eCPM)**:
+$$\text{eCPM} = p\text{CTR} \times \text{Bid Price} \times 1000$$
+If $w = 0.25$ and the model outputs raw $p_{\text{sampled}} = 0.40$ without prior correction:
+$$p_{\text{true}} = \frac{0.40}{0.40 + \frac{0.60}{0.25}} = \frac{0.40}{0.40 + 2.40} = 0.1428 \quad (14.28\%)$$
+Failing to correct this prior inflates the bid by **$2.8\times$**, exhausting advertiser budgets on low-value traffic, winning unprofitable impressions, and incurring catastrophic economic losses.
+
+---
+
+## 🏛️ Domain Module 4: High-Throughput Streaming I/O, Columnar Storage & Memory Layouts
+
+### 4.1 Row-Oriented vs. Columnar-Oriented Storage Mechanics
+When processing web-scale datasets (40M+ events, 100GB+ logs), file format selection dictates memory bandwidth saturation, CPU utilization, and cloud storage egress costs.
+
+```
+Row-Oriented Layout (CSV, JSON, Avro):
+[ Row 1: id, click, hour, C1, banner_pos ] [ Row 2: id, click, hour, C1, banner_pos ]
+* Memory reads load all attributes into CPU cache lines, even when querying a single column.
+
+Columnar Layout (Parquet, ORC, Feather):
+[ id_1, id_2, ... ] [ click_1, click_2, ... ] [ hour_1, hour_2, ... ]
+* Vectorized SIMD reads load ONLY the requested column directly into CPU registers.
+```
+
+### 4.2 Low-Level Hardware Optimization
+- **CPU Cache Line Locality:** A CPU fetches memory in 64-byte cache lines. In a 24-column CSV, computing the mean of column 2 requires reading 23 irrelevant columns into cache, producing a 95% cache thrashing rate. In Parquet, contiguous integers pack tightly into cache lines, maximizing L1 cache hits.
+- **Compression Encodings:**
+  - **Dictionary Encoding:** Replaces repetitive 32-character hexadecimal hashes with 16-bit integer indices ($16\times$ storage reduction).
+  - **Run-Length Encoding (RLE):** Collapses consecutive repeated values (e.g., sorted timestamps) into `(value, count)` tuples.
+  - **Snappy / ZSTD Block Compression:** Decompresses data at $1.5 - 2.5 \text{ GB/sec}$ per CPU core.
+
+---
+
+## 🏛️ Domain Module 5: Sequential Decision Theory & Contextual Multi-Armed Bandits
+
+### 5.1 The Fundamental Explore-Exploit Trade-Off
+Standard supervised learning assumes a static feedback loop: the model predicts, the ground truth is revealed. In live interactive systems (Ad Creative Selection, Dynamic Pricing, Drug Trials), the system **only observes feedback for the action it chose to execute**.
+- If the system only serves ads with high historical CTR (**pure exploitation**), it gets trapped in suboptimal local minima and never discovers high-performing new creatives.
+- If the system serves random ads (**pure exploration**), it degrades user experience and burns advertiser revenue.
+
+### 5.2 Algorithmic Spectrum & Regret Bounds
+The objective is minimizing **Cumulative Regret** over horizon $T$:
+$$R(T) = T \cdot \mu^* - \sum_{t=1}^T \mathbb{E}[r_t]$$
+where $\mu^*$ is the expected reward of the optimal action.
+
+| Algorithm | Mechanism | Regret Bound | Failure Mode / Weakness |
+| :--- | :--- | :--- | :--- |
+| **$\epsilon$-Greedy** | Select random arm with prob $\epsilon$; best arm with $1-\epsilon$ | $O(T)$ (Linear) | Wastes exploration budget uniformly on terrible arms |
+| **UCB1** | Select arm maximizing $\hat{\mu}_a + \sqrt{\frac{2 \ln t}{N_a(t)}}$ | $O(\ln T)$ (Logarithmic) | Ignores context; slow convergence in high dimensions |
+| **Thompson Sampling**| Sample from posterior $P(\theta \mid \mathcal{D})$; choose argmax | $O(\sqrt{K T \ln K})$ | Requires tractable conjugate priors (e.g. Beta-Binomial) |
+| **Contextual Bandit (LinUCB)**| Ridge regression with confidence ellipsoid bonus | $O(\sqrt{d T \ln(T)})$ | Requires matrix inversions; sensitive to non-linearities |
+
+### 5.3 Mathematical Mechanics of LinUCB (Disjoint Model)
+For each candidate ad $a \in \mathcal{A}$, the expected reward is modeled as a linear function of context feature vector $x_t \in \mathbb{R}^d$:
+$$\mathbb{E}[r_{t, a} \mid x_t] = x_t^T \theta_a^*$$
+
+The Ridge Regression closed-form solution with regularizer $I_d$ is:
+$$A_a = D_a^T D_a + I_d = \sum_{i=1}^n x_i x_i^T + I_d \in \mathbb{R}^{d \times d}$$
+$$b_a = D_a^T c_a = \sum_{i=1}^n r_i x_i \in \mathbb{R}^d$$
+$$\hat{\theta}_a = A_a^{-1} b_a$$
+
+**The LinUCB Action Selection Rule:**
+$$a_t = \arg\max_{a \in \mathcal{A}} \left[ x_t^T \hat{\theta}_a + \alpha \sqrt{x_t^T A_a^{-1} x_t} \right]$$
+- $x_t^T \hat{\theta}_a$ is the **estimated expected CTR** (exploitation).
+- $\alpha \sqrt{x_t^T A_a^{-1} x_t}$ is the **standard deviation of the estimate** (exploration bonus).
+- Geometrically, $x_t^T A_a^{-1} x_t$ measures how orthogonal the current query vector $x_t$ is to the space spanned by previously observed feature vectors. Unexplored regions yield large uncertainty bonuses.
+
+### 5.4 Production Low-Latency Matrix Updates (Sherman-Morrison Formula)
+Inverting a $d \times d$ matrix takes $O(d^3)$ time—far too slow for a 20 ms SLA. Using the **Sherman-Morrison rank-1 update**, the inverse matrix $A^{-1}$ is updated incrementally in $O(d^2)$ time upon receiving reward $r$:
+$$(A + x x^T)^{-1} = A^{-1} - \frac{A^{-1} x x^T A^{-1}}{1 + x^T A^{-1} x}$$
+
+---
+
+## 🏛️ Domain Module 6: Entity Resolution, Identity Resolution & Composite Keys
+
+### 6.1 The Full Industry Landscape
+In fraud detection, cybersecurity, and ad-tech, bad actors and mobile browsers intentionally obscure permanent persistent identifiers (Apple IDFA deprecation, Google Sandbox, GDPR/CCPA cookie clearing).
+
+### 6.2 Mathematical Foundations: Entropy & Probabilistic Record Linkage
+- **Fellegi-Sunter Model:** Pairs of records $(r_A, r_B)$ are compared across attributes $\gamma = (\gamma_1, \dots, \gamma_K)$ to calculate likelihood ratios:
+  $$R = \frac{P(\gamma \in \Gamma \mid \text{Match})}{P(\gamma \in \Gamma \mid \text{Non-Match})}$$
+- **Information Entropy of Composite Identifiers:**
+  The information content of an identifier is its Shannon entropy:
+  $$H(X) = -\sum_{i=1}^K P(x_i) \log_2 P(x_i)$$
+  If a single attribute (e.g. `device_id == 'a99f214a'`) covers 80.7% of all requests, its conditional entropy drops to zero. But the composite cross-product:
+  $$\text{Key} = \text{Device IP} \otimes \text{Device Model} \otimes \text{App ID}$$
+  restores high joint entropy $H(\text{Key}) \approx 19.8 \text{ bits}$, uniquely isolating individual human devices across 99.4% of traffic without violating user privacy.
+
+---
+
+## 🏛️ Domain Module 7: Representation Learning & Categorical Regularization
+
+### 7.1 The Mathematical Mechanics of Out-of-Fold Target Encoding
+Given categorical feature $X$ with high cardinality and binary target $Y \in \{0, 1\}$:
+1. **Target Leakage Proof:** Calculating $\hat{S}_c = \frac{1}{n} \sum y_i$ on the training partition allows a single positive label for category $c_{rare}$ to emit $S=1.0$, allowing decision trees to memorize labels and overfit catastrophically.
+2. **K-Fold Disjoint Partitioning:** Splits data into $\mathcal{D}_1, \dots, \mathcal{D}_K$. Fold $k$ is transformed using parameters computed exclusively on $\mathcal{D} \setminus \mathcal{D}_k$.
+3. **Empirical Bayes Shrinkage (M-Estimate Smoothing):**
+   $$S_c = \frac{n_c \cdot \bar{y}_c + m \cdot \mu}{n_c + m}$$
+   Derived as the expected value of a posterior Beta distribution $\text{Beta}(\alpha + \text{clicks}, \beta + \text{impressions})$ where the prior ratio $\frac{\alpha}{\alpha + \beta} = \mu$ and pseudo-count $\alpha + \beta = m$.
+
+---
+
+# 🛠️ PART II: OPTIRANK ARCHITECTURE & DAY-BY-DAY IMPLEMENTATION MASTERCLASSES
+> **Chronological Implementation Archive:** Day-by-Day Code Architecture, 3-Pillar Masterclasses, Line-by-Line Code & Test Suite Breakdowns.
+
+---
+
 # 📒 OptiRank — Concept Guides & Interview Q&A
 
 > Each section covers:
@@ -559,3 +836,170 @@ def compute_point_in_time_user_features(df: pd.DataFrame) -> pd.DataFrame:
 
 > **Q2: "In a real-time recommendation system, how do you handle user history features for a user who visits the app for the very first time (Cold-Start User)?"**  
 > **A:** *"For a cold-start user with zero historical interactions, point-in-time features emit default sentinel values: cumulative impression count is `0`, and historical CTR defaults to the global population prior (e.g. 17.4%). In the ranking cascade, the Stage 1 pre-ranker relies primarily on stateless context features (time-of-day, device model, geolocation) rather than user history. Concurrently, the exploration bandit (LinUCB) assigns a higher uncertainty variance bonus to the user session, actively probing broad categories to quickly build the user's interaction history in real time."*
+
+## 12. Categorical Representations, High-Cardinality Encodings & Out-of-Fold Target Encoding
+
+### 💡 Intuitive Analogy: The Small-Town Restaurant vs. The Global Chain
+Imagine you are rating restaurants based on food safety inspection scores to predict if a diner will get sick:
+- **The Global Chain (McDonald's):** Has 10,000 inspection records across the country. If their average score is 95%, you can trust that 95% number completely because the sample size is huge.
+- **The Brand New Small-Town Diner:** Just opened yesterday and has exactly **1 inspection** with a score of 100%. Does this mean this diner is safer than every hospital in the world? Of course not. It only has a sample size of 1. If tomorrow one inspector finds a dirty fork, its score drops to 50%.
+- **Empirical Bayes Shrinkage:** If a place has only 1 or 2 reviews, you don't trust its raw average. You *shrink* its score toward the **national average** (say, 85%). If it gets hundreds of reviews, you gradually let its own empirical average take over.
+- **Out-of-Fold (OOF) Splitting:** If the inspector grading the restaurant is the *same* person eating lunch there, they will rate the food high just because they gave it an 'A' five minutes ago. To get an honest evaluation, you must always evaluate a restaurant using inspection reports written by *other* inspectors in different districts.
+
+---
+
+### 🔬 Deep Technical Mechanics & Mathematics
+
+#### 1. The Landscape of Categorical Encodings Across Machine Learning
+Categorical variables represent discrete symbols with no natural ordering. In web-scale systems (Search, Ads, E-Commerce, Fraud), categoricals have **extreme cardinality** (e.g. millions of User IDs, IP addresses, Product SKUs):
+
+| Encoding Strategy | Dimensionality | Memory Overhead | Handles High Cardinality ($K > 10^5$)? | Key Vulnerability |
+| :--- | :--- | :--- | :--- | :--- |
+| **One-Hot Encoding** | $O(K)$ | Extreme (sparse matrix) | ❌ No (explodes memory & tree depth) | Distance distortion; sparse gradient updates |
+| **Ordinal / Label Encoding** | $O(1)$ | Minimal | ⚠️ Technically yes, but mathematically flawed | Imposes false metric space ($3 > 1$) on nominal symbols |
+| **Feature Hashing (Hash Trick)** | $O(B)$ fixed | Configurable | ✅ Yes (bounded memory) | Hash collisions; irreversible feature weights |
+| **Entity Embeddings** | $O(D \cdot K)$ | Moderate (dense matrix) | ✅ Yes (standard in Deep Learning) | Requires GPU training; uninterpretable for trees |
+| **Target Encoding (Mean CTR)** | $O(1)$ per column | Minimal (scalar float) | ✅ **Gold standard for Tabular / GBDT** | **Severe Target Leakage if done naively** |
+
+---
+
+#### 2. The Fatal Flaw: Naive Target Encoding & Target Leakage
+Naive target encoding computes the unconditional conditional expectation:
+$$\hat{S}_c = \mathbb{E}[Y \mid X = c] = \frac{1}{|I_c|} \sum_{i \in I_c} y_i$$
+where $I_c = \{i : x_i = c\}$.
+
+**Why this breaks machine learning models:**
+Consider a rare category $c_{rare}$ that appears only once in the entire dataset with label $y=1$.
+Naive encoding sets:
+$$\hat{S}_{c_{rare}} = 1.0$$
+During training, a decision tree (XGBoost, LightGBM, CatBoost) easily splits on `feature == 1.0` to achieve **zero training loss**. But on unseen test data, whenever that category appears with label $0$, the model assigns $1.0$ confidence and suffers an infinite log-loss penalty. **The model has memorized the target label through the feature.**
+
+---
+
+#### 3. The Solution Part 1: Out-of-Fold (OOF) Target Encoding
+To eliminate self-leakage, we partition training data into $K$ disjoint folds $\mathcal{D}_1, \mathcal{D}_2, \dots, \mathcal{D}_K$.
+For each observation $i \in \mathcal{D}_k$, its encoded feature value $\hat{S}_i$ is computed **strictly excluding** the $k$-th fold:
+$$\hat{S}_i = \mathbb{E}[Y \mid X = x_i, \mathcal{D} \setminus \mathcal{D}_k]$$
+
+```
+Full Training Set (5 Folds):
+[ Fold 1 ] [ Fold 2 ] [ Fold 3 ] [ Fold 4 ] [ Fold 5 ]
+     |
+     v
+Encode Fold 1 using stats calculated ONLY from [ Fold 2 + 3 + 4 + 5 ]
+Encode Fold 2 using stats calculated ONLY from [ Fold 1 + 3 + 4 + 5 ]
+... and so on.
+```
+**Mathematical Property:** No observation's own label $y_i$ can ever influence its own feature value $\hat{S}_i$.
+
+---
+
+#### 4. The Solution Part 2: Empirical Bayes Shrinkage (M-Estimate Smoothing)
+Even with Out-of-Fold splitting, rare categories suffer from **high sample variance**. If a category appears only 2 times in the remaining folds and clicked once, its raw sample mean is $0.50$ (50% CTR), while the population prior is only $0.174$ (17.4%).
+
+We regularize this using **Empirical Bayes Shrinkage** (the posterior mean of a Beta-Binomial conjugate prior):
+
+$$S_c = \frac{n_c \cdot \bar{y}_c + m \cdot \mu}{n_c + m}$$
+
+Where:
+- $n_c = |I_c|$ is the total number of observations of category $c$ in the training partition.
+- $\bar{y}_c = \frac{1}{n_c} \sum_{i \in I_c} y_i$ is the empirical sample mean of category $c$.
+- $\mu = \frac{1}{N} \sum_{i=1}^N y_i$ is the global population mean (the prior).
+- $m$ is the **smoothing weight parameter** (pseudo-counts / regularization strength).
+
+**Asymptotic Properties:**
+1. **Rare Category ($n_c \to 0$):**
+   $$\lim_{n_c \to 0} S_c = \frac{0 + m \cdot \mu}{0 + m} = \mu$$
+   *(Shrinks entirely to the stable global prior; eliminates extreme outliers.)*
+2. **Abundant Category ($n_c \to \infty$):**
+   $$\lim_{n_c \to \infty} S_c = \bar{y}_c$$
+   *(The data overwhelms the prior; the category retains its genuine empirical conversion rate.)*
+3. **Unseen / Cold-Start Category at Test Time:**
+   $$S_{unseen} = \mu$$
+   *(Guarantees numerical stability with zero NaN/Inf values.)*
+
+---
+
+### 💻 Line-by-Line Code Breakdown (`src/optirank/features/target_encoder.py`)
+
+```python
+class OutOfFoldTargetEncoder:
+    def __init__(self, cols: list[str], n_splits: int = 5, m: float = 10.0):
+        # List of high-cardinality categorical column names to encode
+        self.cols = cols
+        # Number of cross-validation folds for out-of-fold training
+        self.n_splits = n_splits
+        # Empirical Bayes shrinkage pseudo-count weight
+        self.m = m
+        # Global prior CTR across training data
+        self.global_prior: float = 0.0
+        # Production inference mapping: {col_name: {category_key: smoothed_ctr_value}}
+        self.encoding_maps: dict[str, dict[Any, float]] = {}
+
+    def fit_transform(self, df: pd.DataFrame, target_col: str) -> pd.DataFrame:
+        df = df.copy()
+        # Compute global baseline CTR (e.g. 17.42% in Avazu)
+        self.global_prior = df[target_col].mean()
+        
+        # Partition training set into K disjoint folds using deterministic KFold
+        kf = KFold(n_splits=self.n_splits, shuffle=True, random_state=42)
+        
+        for col in self.cols:
+            encoded_col_name = f"{col}_te"
+            # Initialize column with global prior to prevent missing values
+            df[encoded_col_name] = self.global_prior
+            
+            # Out-of-Fold Loop: Fit on (K-1) folds, transform the held-out fold
+            for train_idx, val_idx in kf.split(df):
+                train_fold = df.iloc[train_idx]
+                
+                # Compute category counts (n) and sum of clicks
+                stats = train_fold.groupby(col)[target_col].agg(["count", "sum"])
+                
+                # Apply Empirical Bayes shrinkage formula
+                smoothed = (stats["sum"] + self.m * self.global_prior) / (stats["count"] + self.m)
+                
+                # Vectorized map back onto the validation fold
+                df.iloc[val_idx, df.columns.get_loc(encoded_col_name)] = (
+                    df.iloc[val_idx][col].map(smoothed).fillna(self.global_prior)
+                )
+            
+            # Compute full-dataset mapping for production inference serving
+            full_stats = df.groupby(col)[target_col].agg(["count", "sum"])
+            self.encoding_maps[col] = (
+                (full_stats["sum"] + self.m * self.global_prior) / (full_stats["count"] + self.m)
+            ).to_dict()
+            
+        return df
+
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        df = df.copy()
+        for col in self.cols:
+            encoded_col_name = f"{col}_te"
+            # O(1) hash map lookup at inference time; fallback to global_prior for cold-start
+            df[encoded_col_name] = (
+                df[col].map(self.encoding_maps[col]).fillna(self.global_prior).astype(np.float32)
+            )
+        return df
+```
+
+---
+
+### 🎯 Production Engineering Realities
+
+1. **Sub-Millisecond Inference SLAs ($< 0.1 \text{ ms}$):**
+   In online ad auctions, you cannot perform Pandas groupby or compute aggregations at request time. The `fit()` phase precomputes a serialized hash table `{category_id: float32}`. At serving time, this is stored in **Redis** or compiled into an in-memory C++ array, turning feature generation into a pure $O(1)$ memory lookup.
+2. **Memory Efficiency over One-Hot:**
+   In Avazu, column `device_ip` has over **1.5 million unique values**. One-hot encoding would create a matrix of $40,000,000 \times 1,500,000$ elements ($\approx 240 \text{ Terabytes}$ of RAM). Target encoding collapses this into a single 32-bit floating point vector ($\approx 160 \text{ Megabytes}$), a **$1,500,000\times$ memory reduction**.
+3. **Handling High-Cardinality Drift:**
+   New apps, publishers, and device models appear every day. If an incoming request contains a category never seen during training, `fillna(self.global_prior)` ensures the ranking cascade degrades gracefully to the global CTR rather than throwing a `KeyError` or returning `NaN`.
+
+---
+
+### 🎤 Senior/Staff ML Interview Questions & Model Answers:
+
+> **Q1: "Why does standard target encoding cause catastrophic overfitting in tree-based gradient boosters (LightGBM/XGBoost), and how do Out-of-Fold splitting and Empirical Bayes smoothing solve this?"**  
+> **A:** *"Standard target encoding introduces severe target leakage because an observation's own label $y_i$ directly contaminates its feature value. For rare categories (e.g. sample size of 1), the feature perfectly mirrors the label, allowing decision trees to memorize noise and achieve zero training loss while failing completely in production. Out-of-Fold (OOF) splitting guarantees that an observation is encoded exclusively using statistics from other folds ($\mathcal{D} \setminus \mathcal{D}_k$), eliminating self-leakage. Empirical Bayes smoothing further regularizes high-variance estimates by shrinking rare categories toward the global population prior using a pseudo-count weight: $S_c = \frac{n \bar{y} + m \mu}{n + m}$."*
+
+> **Q2: "In a real-time ad ranking microservice receiving 50,000 queries per second, how do you serve target-encoded features under a 15 ms total P99 latency SLA?"**  
+> **A:** *"Target encoding transforms high-cardinality nominals into a static key-value lookup. Offline pipelines (e.g. daily Spark/Ray jobs) calculate the smoothed statistics and export the mapping dictionaries to an ultra-low-latency in-memory cache like Redis or a local Aerospike cluster. During online inference, the scoring service executes concurrent batch MGET lookups ($< 1 \text{ ms}$ latency). If a category key misses (cold start), it immediately defaults to the pre-loaded float32 global prior without blocking the cascade."*

@@ -158,5 +158,6 @@ uvicorn optirank.api.main:app --host 0.0.0.0 --port 8000 --reload
 ---
 
 ## 📚 Technical Knowledge Base & Interview Guide
-For exhaustive, first-principles explanations of cascade architectures, prior correction math, entity resolution, and senior FAANG interview question breakdowns, see our comprehensive guide:
-👉 **[`docs/notes.md`](docs/notes.md)**
+For exhaustive, first-principles explanations of cascade architectures, prior correction math, entity resolution, and senior FAANG interview question breakdowns, see our comprehensive guides:
+👉 **[docs/learning_notes.md (The Staff-Level 360° Mastery Encyclopedia)](docs/learning_notes.md)**  
+👉 **[docs/notes.md (Quick Reference)](docs/notes.md)**
