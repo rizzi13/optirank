@@ -847,6 +847,44 @@ def test_zero_height_guard():
 
 ## 11. Point-in-Time Correctness, Temporal Feature Stores & Historical Feature Engineering
 
+### 💡 Intuitive Layman Masterclass: The "Annoying Commercial Counter" (Ad Fatigue)
+Imagine sitting on the couch watching YouTube:
+- **1st Impression:** You see an ad for a new sneaker. You think: *"Hey, cool shoes."*
+- **2nd Impression:** You see it again. You think: *"Okay, I remember those."*
+- **4th & 5th Impression in 20 minutes:** What do you do? **You get irritated and you will NEVER click.**
+
+This psychological saturation is called **Ad Fatigue**. If an ad ranking AI doesn't know how many times a user has already seen an ad, it keeps bidding top dollar on an annoyed user who will never convert.
+
+#### Why the Naive Pandas Way is Time-Traveling Cheating:
+```python
+# THE DISASTROUS WAY:
+df["total_impressions"] = df.groupby("user")["ad"].transform("count")
+```
+`transform('count')` looks at all 10 days at once (past, present, AND future). If Rahul sees 20 ads over 10 days, this bad code tells the model on **Day 1, Minute 1**: *"Rahul has seen 20 ads!"* That is impossible in live production and causes the model to fail when deployed.
+
+#### How Our `.cumcount()` History Engine Works:
+```python
+# 1. Sort strictly in time order
+df = df.sort_values(by=["user_proxy", "hour"]).reset_index(drop=True)
+
+# 2. Increment monotonically (starts at 0, 1, 2, 3...)
+df["user_historical_impressions"] = df.groupby("user_proxy").cumcount().astype(np.int32)
+
+# 3. Count impressions for THIS specific ad campaign (C14) shown to THIS user
+df["user_campaign_historical_count"] = df.groupby(["user_proxy", "C14"]).cumcount().astype(np.int16)
+
+# 4. Trigger the fatigue alarm when count >= 3 (4th impression)
+df["is_user_ad_fatigued"] = (df["user_campaign_historical_count"] >= 3).astype(np.int8)
+```
+
+| Time | User | Ad Campaign | `user_campaign_historical_count` | `is_user_ad_fatigued` | What the AI Decides |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **10:00 AM** | Rahul | Nike Sneaker | **0** | **0** (No) | "First impression. High click probability!" |
+| **10:15 AM** | Rahul | Nike Sneaker | **1** | **0** (No) | "Second impression. Still fresh." |
+| **10:30 AM** | Rahul | Nike Sneaker | **2** | **0** (No) | "Third impression. Approaching saturation." |
+| **10:45 AM** | Rahul | Nike Sneaker | **3** | **1** (YES!) | **"FATIGUE ALARM! Drop the bid; show a Spotify ad instead!"** |
+
+
 ### 💡 Intuitive Analogy: The Sports Betting Bookmaker & The Season-End Cheat
 Imagine you are running a sports betting company predicting whether a football team will win tonight's game:
 - **Scenario A (Cheating via Time Travel):** You train your model on past games from 2023. To calculate the feature *"Average goals scored per game"*, you take the team's total goals at the end of the entire 2023 season (80 goals in 40 games = 2.0 goals/game) and feed that number into Game #1 on opening day in August.
@@ -919,6 +957,43 @@ def compute_point_in_time_user_features(df: pd.DataFrame) -> pd.DataFrame:
 > **A:** *"For a cold-start user with zero historical interactions, point-in-time features emit default sentinel values: cumulative impression count is `0`, and historical CTR defaults to the global population prior (e.g. 17.4%). In the ranking cascade, the Stage 1 pre-ranker relies primarily on stateless context features (time-of-day, device model, geolocation) rather than user history. Concurrently, the exploration bandit (LinUCB) assigns a higher uncertainty variance bonus to the user session, actively probing broad categories to quickly build the user's interaction history in real time."*
 
 ## 12. Categorical Representations, High-Cardinality Encodings & Out-of-Fold Target Encoding
+
+### 💡 Intuitive Layman Masterclass: Out-of-Fold Splitting & How Buckets Vote
+
+#### 1. The 5-Student Study Group (The "Hallway" Rule)
+Imagine 5 friends in a study group: **Alice, Bob, Charlie, David, and Emily**. They all took a test and need to grade them:
+- **The Cheating Way:** If the teacher lets Alice grade her own test, Alice gives herself **100%**. Bob gives himself **100%**. Nobody learns anything; everyone just cheats from their own answers.
+- **The Out-of-Fold (OOF) Way:** The teacher tells Alice: *"Step outside into the hallway."* Bob, Charlie, David, and Emily grade Alice's test paper honestly. Alice cannot cheat because she is outside the room! Then Bob steps outside, and the others grade Bob. **Nobody is ever allowed to grade their own paper.**
+
+---
+
+#### 2. How Do the Buckets "Vote"?
+Suppose we want to calculate the score for the app **"Candy Crush"** in **Bucket 1**.
+1. **Bucket 1 is kicked out of the room.**
+2. The teacher asks the **4 buckets left in the room** (Buckets 2, 3, 4, 5): *"How many times did users see Candy Crush in your bucket, and how many clicked?"*
+   - **Bucket 2 votes:** 2 impressions, **0 clicks**.
+   - **Bucket 3 votes:** 3 impressions, **1 click**.
+   - **Bucket 4 votes:** 2 impressions, **0 clicks**.
+   - **Bucket 5 votes:** 3 impressions, **1 click**.
+3. **Tallying the Vote:**
+   - Total Impressions = $2 + 3 + 2 + 3 = 10$
+   - Total Clicks = $0 + 1 + 0 + 1 = 2$
+   - **The Vote Result:** $\frac{2}{10} = \mathbf{0.20} \quad (20\%)$
+4. The teacher calls Bucket 1 back into the room and replaces the word `"Candy Crush"` with **`0.20`**.
+   - **Critical Property:** Bucket 1's own clicks **never entered the vote**. No self-leakage!
+
+---
+
+#### 3. Do Different Buckets Have Different Ads? (The Deck of Cards Shuffling Analogy)
+**NO! Every bucket has a random mix of ALL ads.**
+- Imagine a deck of 10,000 cards with Nike ads, Spotify ads, and Candy Crush ads.
+- You **shuffle the entire deck randomly** and deal it into 5 equal piles (Buckets 1 through 5).
+- Every bucket gets some Nike, some Spotify, and some Candy Crush ads!
+- The difference is the **people**:
+  - In **Bucket 1**, *Rahul* saw Candy Crush.
+  - In **Buckets 2, 3, 4, 5**, *Priya, Amit, Sneha, and Rohan* also saw Candy Crush.
+- When we evaluate Rahul's impression, we ask Priya, Amit, Sneha, and Rohan how they responded to Candy Crush.
+
 
 ### 💡 Intuitive Analogy: The Small-Town Restaurant vs. The Global Chain
 Imagine you are rating restaurants based on food safety inspection scores to predict if a diner will get sick:
