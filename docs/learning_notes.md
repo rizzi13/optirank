@@ -54,6 +54,8 @@
   - [2. Streaming Parquet & Memory Savings Test (`tests/test_load.py`)](#2-teststest_loadpy-streaming-parquet--memory-ingestion)
   - [3. Temporal Invariance & Bayesian Prior Inversion Test (`tests/test_split.py`)](#3-teststest_splitpy-temporal-invariance--bayesian-prior-inversion)
   - [4. Feature Geometry & Numerical Safety Test (`tests/test_features.py`)](#4-teststest_featurespy-feature-geometry--numerical-safety)
+  - [5. Out-of-Fold Target Encoder Test (`tests/test_target_encoder.py`)](#5-out-of-fold-target-encoder--empirical-bayes-test-teststest_target_encoderpy)
+  - [6. Point-in-Time Historical Behavioral Features Test (`tests/test_history.py`)](#6-point-in-time-historical-behavioral-features-test-teststest_historypy)
 
 ---
 
@@ -1003,3 +1005,128 @@ class OutOfFoldTargetEncoder:
 
 > **Q2: "In a real-time ad ranking microservice receiving 50,000 queries per second, how do you serve target-encoded features under a 15 ms total P99 latency SLA?"**  
 > **A:** *"Target encoding transforms high-cardinality nominals into a static key-value lookup. Offline pipelines (e.g. daily Spark/Ray jobs) calculate the smoothed statistics and export the mapping dictionaries to an ultra-low-latency in-memory cache like Redis or a local Aerospike cluster. During online inference, the scoring service executes concurrent batch MGET lookups ($< 1 \text{ ms}$ latency). If a category key misses (cold start), it immediately defaults to the pre-loaded float32 global prior without blocking the cascade."*
+
+---
+
+## 13. Advanced Production ML Testing: Target Encoders & Point-in-Time History Invariants
+
+### 💡 Intuitive Analogy: The Dual Blindfold and The Live Stopwatch
+- **Testing the Target Encoder (The Dual Blindfold):** If a student takes an exam with the answer key in their pocket, they score 100%. Our unit tests act like an invigilator checking that the student is completely blindfolded from their own answers: even if an app ID had 100% clicks across the universe, its encoded score in its own training fold is mathematically prevented from reaching 1.0.
+- **Testing Point-in-Time History (The Live Stopwatch):** If you are timing a runner's 100m split at the 50m mark, their 50m split time cannot change based on whether they trip and fall at the 90m mark. Our tests freeze the timeline and prove that appending future records produces bit-for-bit identical historical feature values for all previous timestamps.
+
+---
+
+### 🔬 Deep Technical Mechanics & Invariant Properties
+
+```
+[ Row 1 (t=10:00) ]  ->  user_impressions = 0  (Never sees t=10:01)
+[ Row 2 (t=10:01) ]  ->  user_impressions = 1  (Never sees t=10:02)
+[ Row 3 (t=10:02) ]  ->  user_impressions = 2  (Never sees t=10:03)
+```
+
+1. **Self-Leakage Prevention Invariant:**
+   $$\hat{S}_i = \mathbb{E}[Y \mid X = x_i, \mathcal{D} \setminus \mathcal{D}_k] < 1.0 \quad \forall i \in \mathcal{D}_k \text{ where } y_i = 1$$
+   No row's own target label can ever enter its own feature calculation.
+2. **Asymptotic Convergence Invariants:**
+   - For abundant categories ($n_c \to \infty$): $|S_c - \bar{y}_c| < \epsilon$.
+   - For rare categories ($n_c \to 0$): $|S_c - \mu| < \epsilon$.
+3. **Temporal Monotonicity Invariant:**
+   $$\text{Historical Count}_{t_2} \ge \text{Historical Count}_{t_1} \quad \forall t_2 > t_1$$
+4. **Historical Immutability Invariant:**
+   $$\mathbf{f}_{\text{history}}(u, t) \mid \mathcal{D}_{t} \equiv \mathbf{f}_{\text{history}}(u, t) \mid \mathcal{D}_{t + \Delta t}$$
+   Adding new rows in the future ($\mathcal{D}_{t + \Delta t}$) does not alter the historical state computed at time $t$.
+
+---
+
+### 💻 Comprehensive Line-by-Line Breakdown of Day 4 Test Suites
+
+#### 5. Out-of-Fold Target Encoder & Empirical Bayes Test (`tests/test_target_encoder.py`)
+```python
+def test_target_encoder_shape_and_types(synthetic_encoder_df: pd.DataFrame) -> None:
+    # Verifies both engineered target-encoded columns are generated as float32
+    df = synthetic_encoder_df.copy()
+    encoder = OutOfFoldTargetEncoder(cols=["app_id", "site_id"], n_splits=5, m=10.0)
+    out_df = encoder.fit_transform(df, target_col="click")
+
+    assert "app_id_te" in out_df.columns
+    assert "site_id_te" in out_df.columns
+    assert out_df["app_id_te"].dtype == np.float32
+    assert not out_df["app_id_te"].isna().any()
+
+def test_target_encoder_no_target_leakage(synthetic_encoder_df: pd.DataFrame) -> None:
+    # Critical invariant: app_rare has 100% click rate in synthetic data,
+    # but Out-of-Fold partitioning + shrinkage forces its score strictly < 0.95
+    df = synthetic_encoder_df.copy()
+    encoder = OutOfFoldTargetEncoder(cols=["app_id"], n_splits=5, m=10.0)
+    out_df = encoder.fit_transform(df, target_col="click")
+    rare_encoded_vals = out_df[out_df["app_id"] == "app_rare"]["app_id_te"].values
+    assert np.all(rare_encoded_vals < 0.95)
+
+def test_empirical_bayes_shrinkage_bounds(synthetic_encoder_df: pd.DataFrame) -> None:
+    # Asserts that large sample sizes (160 rows) converge to true empirical mean,
+    # while small sample sizes (5 rows) are shrunk strongly toward global population prior
+    df = synthetic_encoder_df.copy()
+    encoder = OutOfFoldTargetEncoder(cols=["app_id"], n_splits=5, m=10.0)
+    encoder.fit_transform(df, target_col="click")
+
+    pop_empirical_mean = df[df["app_id"] == "app_popular"]["click"].mean()
+    assert abs(encoder.encoding_maps["app_id"]["app_popular"] - pop_empirical_mean) < 0.05
+    assert encoder.encoding_maps["app_id"]["app_rare"] < 0.70
+
+def test_inference_cold_start_fallback(synthetic_encoder_df: pd.DataFrame) -> None:
+    # Tests real-time serving robustness: brand new unseen app ID must default to global_prior
+    train_df = synthetic_encoder_df.copy()
+    encoder = OutOfFoldTargetEncoder(cols=["app_id"], n_splits=5, m=10.0)
+    encoder.fit_transform(train_df, target_col="click")
+
+    test_df = pd.DataFrame({"app_id": ["app_unseen_xyz", "app_popular"]})
+    transformed = encoder.transform(test_df)
+    assert not transformed["app_id_te"].isna().any()
+    assert transformed.loc[0, "app_id_te"] == pytest.approx(encoder.global_prior, abs=1e-5)
+```
+
+#### 6. Point-in-Time Historical Behavioral Features Test (`tests/test_history.py`)
+```python
+def test_history_monotonically_increasing(synthetic_history_df: pd.DataFrame) -> None:
+    # Asserts that cumulative user impression counts start at 0 and increment monotonically: [0, 1, 2, 3]
+    df = compute_point_in_time_user_features(synthetic_history_df)
+    u1_rows = df[df["user_proxy"] == "u1"].sort_values("hour")
+    assert list(u1_rows["user_historical_impressions"]) == [0, 1, 2, 3]
+
+def test_no_lookahead_leakage(synthetic_history_df: pd.DataFrame) -> None:
+    # Proves temporal immutability: the first 3 events must be 100% bit-for-bit identical
+    # regardless of whether event 4 exists in the dataset
+    df_short = synthetic_history_df.iloc[:3].copy()
+    out_short = compute_point_in_time_user_features(df_short)
+
+    df_long = synthetic_history_df.iloc[:4].copy()
+    out_long = compute_point_in_time_user_features(df_long)
+
+    pd.testing.assert_series_equal(
+        out_short["user_historical_impressions"],
+        out_long["user_historical_impressions"].iloc[:3],
+    )
+
+def test_ad_fatigue_threshold(synthetic_history_df: pd.DataFrame) -> None:
+    # Asserts that is_user_ad_fatigued stays 0 for impressions 0, 1, 2, and flips to 1 on impression 3
+    df = compute_point_in_time_user_features(synthetic_history_df)
+    u1_rows = df[df["user_proxy"] == "u1"].sort_values("hour")
+    assert list(u1_rows["is_user_ad_fatigued"]) == [0, 0, 0, 1]
+
+def test_independent_campaign_counters(synthetic_history_df: pd.DataFrame) -> None:
+    # Verifies that counters for different ad campaigns (C14) do not cross-contaminate
+    df = compute_point_in_time_user_features(synthetic_history_df)
+    u2_rows = df[df["user_proxy"] == "u2"].sort_values("hour")
+    assert list(u2_rows["user_campaign_historical_count"]) == [0, 0]
+```
+
+### 🎯 The Production Failure Modes It Solves
+- **Eliminating Silent Pipeline Regressions:** Adding tests for `history.py` guarantees that future refactorings (such as replacing pandas with Polars or PySpark) cannot accidentally reintroduce `transform('count')` or sort by the wrong time column.
+- **Strict Compliance with Serving Infrastructure:** Proves that the offline training feature definitions behave identically to online Redis streaming counters.
+
+### 🎤 Senior/Staff ML Interview Questions & Model Answers:
+> **Q1: "How do you test that an ML feature engineering pipeline contains zero lookahead data leakage?"**  
+> **A:** *"We write a Temporal Invariance Test: we take a historical sequence of events up to time $T$, compute the feature representations $\mathbf{F}_{1:T}$, then append future records from time $T+1 \dots T+N$ and recompute $\mathbf{F}'_{1:T+N}$. We assert with `pd.testing.assert_series_equal` that $\mathbf{F}_{1:T} \equiv \mathbf{F}'_{1:T}$. If the feature values for earlier timestamps change by even a single floating-point epsilon after future events are appended, lookahead leakage is present."*
+
+> **Q2: "In a real-world test suite, how do you verify Empirical Bayes target encoding without relying on full-dataset training runs?"**  
+> **A:** *"We use synthetic micro-datasets with engineered extremal distributions: one category with high frequency ($N=160$) and realistic variance, and an adversarial rare category ($N=5$) with an artificial $100\%$ positive target rate. We assert two mathematical bounds: First, that the rare category's transformed feature is strictly lower than a conservative upper bound (e.g. $< 0.70$ when global prior is $0.25$), proving shrinkage is active. Second, that cold-start inference with unseen category keys falls back to the exact global prior with zero `NaN` values."*
